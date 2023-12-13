@@ -4,27 +4,31 @@ import paho.mqtt.publish as publish
 import random
 import shutil
 import time
+from datetime import datetime
 from urllib.parse import urlparse
 
 now = lambda: int(round(time.time() * 1000))
 
-def __msg(topic, payload, qos=0, retain=False):
-    return { "topic": topic, "payload": payload, "qos": qos, "retain": retain }
+def __event_datetime():
+    now = datetime.now()
+    # dd/mm/YY H:M:S
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    return dt_string
 
-def __payload(location_id, rig_id, time, type, data=None):
-    return { "locationId": location_id, "rigId": rig_id, "time": time, "source": "pumpjack", "type": type, "data": (data if data!=None else {}) }
+def __msg(topic, payload):
+    return {"topic": topic, "payload": payload }
+
+def __payload(location_id, rig_id, time, type, metric, value):
+    return { "locationId": location_id, "rigId": rig_id, "eventDateTime": time, "source": "pumpjack", "type": type, "metric": metric, "value" : value }
 
 def __heartbeat(location_id, rig_id, time):
-    data = None
-    return __payload(location_id, rig_id, time, "heartbeat", data)
+    return __payload(location_id, rig_id, time, "heartbeat", "voltage", 380)
 
 def __tachometer(location_id, rig_id, time, speed, speed_variance):
-    data = { "rpm": random.uniform(max(0, speed - speed_variance), max(0, speed + speed_variance)) }
-    return __payload(location_id, rig_id, time, "tachometer", data)
+    return __payload(location_id, rig_id, time, "tachometer", "rpm",random.uniform(max(0, speed - speed_variance), max(0, speed + speed_variance)) )
 
 def __piezo(location_id, rig_id, time, frequency, frequency_variance):
-    data = { "vibrationFrequency": random.uniform(max(0, frequency - frequency_variance), max(0, frequency + frequency_variance)) }
-    return __payload(location_id, rig_id, time, "piezo", data)
+    return __payload(location_id, rig_id, time, "piezo", "vibrationFrequency",random.uniform(max(0, frequency - frequency_variance), max(0, frequency + frequency_variance)) )
 
 @click.command(context_settings={ "max_content_width": shutil.get_terminal_size()[0] })
 @click.option("--location-id", help="The unique identifier for the location.")
@@ -52,17 +56,17 @@ def main(location_id, rig_id, broker_username, broker_password, telemetry_topic,
         if verbose:
             click.echo("Woke up. Gathering telemetry data...")
             click.echo("Last run: {}, Current Run: {}".format(last_run, current_run))
-        msg = __msg(telemetry_topic, json.dumps(__heartbeat(location_id, rig_id, current_run)))
+            msg = __msg(telemetry_topic, json.dumps(__heartbeat(location_id, rig_id, __event_datetime())))
         if verbose:
             click.echo(msg)
         msgs.append(msg)
         if tachometer_enabled:
-            msg = __msg(telemetry_topic, json.dumps(__tachometer(location_id, rig_id, current_run, tachometer_rotation_speed, tachometer_rotation_speed_variance)))
+            msg = __msg(telemetry_topic, json.dumps(__tachometer(location_id, rig_id, __event_datetime(), tachometer_rotation_speed, tachometer_rotation_speed_variance)))
             if verbose:
                 click.echo(msg)
             msgs.append(msg)
         if piezo_enabled:
-            msg = __msg(telemetry_topic, json.dumps(__piezo(location_id, rig_id, current_run, piezo_vibration_frequency, piezo_vibration_frequency_variance)))
+            msg = __msg(telemetry_topic, json.dumps(__piezo(location_id, rig_id, __event_datetime(), piezo_vibration_frequency, piezo_vibration_frequency_variance)))
             if verbose:
                 click.echo(msg)
             msgs.append(msg)
