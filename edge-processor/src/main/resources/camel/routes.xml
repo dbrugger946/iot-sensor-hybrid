@@ -27,13 +27,15 @@
         <log message="Sensor Data: ${body}"/>
 
         <to uri="direct:main"/>
-    </route>
 
+    </route>
     <!-- MAIN PROCESSOR -->
     <route id="main">
         <from uri="direct:main"/>
 
-        <to uri="direct:transform-mqtt-data" />
+        <log message="in main" />
+
+        <to uri="direct:transform-mqtt-data" /> 
 
         <to uri="direct:further-remote-review"/>
         <!-- add further local processing/actions -->
@@ -59,7 +61,8 @@
     <route id="further-remote-review">
         <from uri="direct:further-remote-review"/>
         
-        <toD uri= "http://localhost:8082/evaluate"/>
+        <!-- <toD uri= "http://legacy-evaluator:8082/evaluate"/> -->
+         
         <log message="**** Remote Evaluation Response: ${body}"/>
 
     
