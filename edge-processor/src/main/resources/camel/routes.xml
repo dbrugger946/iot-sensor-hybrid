@@ -61,7 +61,7 @@
     <route id="further-remote-review">
         <from uri="direct:further-remote-review"/>
         
-        <!-- <toD uri= "http://legacy-evaluator:8082/evaluate"/> -->
+        <toD uri= "http://legacy-evaluator:8082/evaluate"/>
          
         <log message="**** Remote Evaluation Response: ${body}"/>
 
